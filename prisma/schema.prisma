@@ -1,13 +1,73 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum Role {
+  CUSTOMER
+  TECHNICIAN
+  DISPATCHER
+  ADMIN
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  name            String
+  password        String
+  role            Role             @default(CUSTOMER)
+  payments        Payment[]
+  serviceRequests ServiceRequest[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("users")
+}
+
+model ServiceRequest {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  payments    Payment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("service_requests")
+}
+
+model Payment {
+  id               String         @id @default(cuid())
+  serviceRequestId String
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+  userId           String
+  user             User           @relation(fields: [userId], references: [id])
+  amount           Decimal        @db.Decimal(10, 2)
+  currency         String         @default("USD")
+  status           PaymentStatus  @default(PENDING)
+  stripePaymentId  String?        @unique
+  stripeSessionId  String?        @unique
+  bkashPaymentId   String?        @unique
+  bkashTrxId       String?        @unique
+  description      String?
+  paidAt           DateTime?
+  refundedAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([serviceRequestId])
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
 }

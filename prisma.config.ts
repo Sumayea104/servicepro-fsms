@@ -1,7 +1,7 @@
-import { defineConfig, env } from '@prisma/config';
+import { definePrismaConfig } from "prisma/config";
 
-export default defineConfig({
-  datasource: {
-    url: env('DATABASE_URL'),
+export default definePrismaConfig({
+  skills: {
+    agents: ["claude", "cursor", "agents", "devin"],
   },
 });

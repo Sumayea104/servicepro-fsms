@@ -1,42 +1,15 @@
-
 node_modules/
-package-lock.json
-yarn.lock
-
-# Environment
-.env
-.env.local
-.env.production
-
-# Build
 dist/
 build/
-*.tsbuildinfo
-
-# Logs
-logs/
+.env
+.env.local
+.env.*.local
 *.log
 npm-debug.log*
-
-# Testing
+.DS_Store
 coverage/
-.nyc_output/
-
-# IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Uploads
-uploads/
-temp/
-
-# Prisma
 prisma/*.db
 prisma/*.db-journal
-/generated/prisma
+EOF

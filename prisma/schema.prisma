@@ -1,0 +1,430 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════
+
+enum Role {
+  CUSTOMER
+  TECHNICIAN
+  ADMIN
+}
+
+enum JobStatus {
+  PENDING
+  ASSIGNED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum JobCategory {
+  ELECTRICAL
+  PLUMBING
+  AC_REPAIR
+  APPLIANCE_REPAIR
+  CARPENTRY
+  PAINTING
+  CLEANING
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  STRIPE
+  BKASH
+}
+
+// ═══════════════════════════════════════
+// USER & AUTH
+// ═══════════════════════════════════════
+
+model User {
+  id         String    @id @default(uuid())
+  email      String    @unique
+  password   String
+  fullName   String
+  phone      String?
+  role       Role      @default(CUSTOMER)
+  avatarUrl  String?
+  isActive   Boolean   @default(true)
+  deletedAt  DateTime?
+
+  // Email verification
+  emailVerified       Boolean   @default(false)
+  emailVerifyToken    String?   @unique
+  emailVerifyExpires  DateTime?
+
+  // Password reset
+  passwordResetToken  String?   @unique
+  passwordResetExpiry DateTime?
+
+  // Login tracking
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  customerJobs          Job[]               @relation("CustomerJobs")
+  assignedJobs          Job[]               @relation("AssignedByAdmin")
+  technician            TechnicianProfile?
+  verifiedTechnicians   TechnicianProfile[] @relation("TechnicianVerifiedBy")
+  payments              Payment[]
+  jobLogs               JobLog[]
+  refreshTokens         RefreshToken[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  attachments           Attachment[]
+  reviews               TechnicianReview[]
+  systemSettingsUpdates SystemSetting[]     @relation("SystemSettingUpdater")
+
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([userId, revokedAt])  
+  @@map("refresh_tokens")
+}
+
+// ═══════════════════════════════════════
+// TECHNICIAN
+// ═══════════════════════════════════════
+
+model TechnicianProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills       String[]
+  serviceAreas String[]
+  bio          String?
+  experience   Int?
+  hourlyRate   Decimal? @db.Decimal(10, 2)
+
+  // Verification
+  isVerified      Boolean   @default(false)
+  verifiedAt      DateTime?
+  verifiedById    String?
+  verifiedBy      User?     @relation("TechnicianVerifiedBy", fields: [verifiedById], references: [id])
+  documents       String[]
+  rejectionReason String?
+
+  // Availability
+  isAvailable   Boolean   @default(true)
+  currentLat    Float?
+  currentLng    Float?
+  rating        Float     @default(5.0)
+  totalJobs     Int       @default(0)
+  totalEarnings Decimal   @default(0) @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  assignedJobs   Job[]              @relation("TechnicianJobs")
+  availability   Availability[]
+  reviews        TechnicianReview[]
+  serviceReports ServiceReport[]
+
+  @@index([isAvailable])
+  @@index([isVerified])
+  @@index([rating])
+  @@map("technician_profiles")
+}
+
+model Availability {
+  id           String            @id @default(uuid())
+  technicianId String
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int              
+  startTime    String           
+  endTime      String           
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+
+  @@index([technicianId, dayOfWeek])
+  @@map("availability")
+}
+
+// ═══════════════════════════════════════
+// JOBS
+// ═══════════════════════════════════════
+
+model Job {
+  id          String      @id @default(uuid())
+  title       String
+  description String
+  category    JobCategory @default(OTHER)
+  priority    Priority    @default(MEDIUM)
+  status      JobStatus   @default(PENDING)
+  tags        String[]
+
+  // Location
+  address   String
+  latitude  Float?
+  longitude Float?
+
+  // Scheduling
+  scheduledAt DateTime?
+
+  // Lifecycle timestamps
+  assignedAt         DateTime?
+  acceptedAt         DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?
+
+  // Cost
+  estimatedCost Decimal? @db.Decimal(10, 2)
+  finalCost     Decimal? @db.Decimal(10, 2)
+
+  // Soft delete
+  deletedAt DateTime?
+
+  // Relations
+  customerId String
+  customer   User   @relation("CustomerJobs", fields: [customerId], references: [id])
+
+  technicianId String?
+  technician   TechnicianProfile? @relation("TechnicianJobs", fields: [technicianId], references: [id])
+
+  assignedById String?
+  assignedBy   User?   @relation("AssignedByAdmin", fields: [assignedById], references: [id])
+
+  payment       Payment?
+  review        TechnicianReview?
+  serviceReport ServiceReport?
+  logs          JobLog[]
+  attachments   Attachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([assignedById])
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@index([scheduledAt])
+  @@index([createdAt])
+  @@index([status, scheduledAt])
+  @@map("jobs")
+}
+
+model JobLog {
+  id          String     @id @default(uuid())
+  jobId       String
+  job         Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  oldStatus   JobStatus?
+  newStatus   JobStatus
+  note        String?
+  changedById String?
+  changedBy   User?      @relation(fields: [changedById], references: [id])
+  createdAt   DateTime   @default(now())
+
+  @@index([jobId])
+  @@index([createdAt])
+  @@map("job_logs")
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  jobId      String?
+  job        Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  uploadedBy String
+  uploader   User     @relation(fields: [uploadedBy], references: [id])
+  fileName   String
+  fileUrl    String
+  fileType   String
+  fileSize   Int
+  purpose    String?  
+  createdAt  DateTime @default(now())
+
+  @@index([jobId])
+  @@index([uploadedBy])
+  @@map("attachments")
+}
+
+model ServiceReport {
+  id              String            @id @default(uuid())
+  jobId           String            @unique
+  job             Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  technicianId    String
+  technician      TechnicianProfile @relation(fields: [technicianId], references: [id])
+
+  summary         String           
+  findings        String?          
+  recommendations String?        
+  laborHours      Float?            
+  partsUsed       String[]         
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([technicianId])
+  @@map("service_reports")
+}
+
+// ═══════════════════════════════════════
+// PAYMENTS
+// ═══════════════════════════════════════
+
+model Payment {
+  id       String        @id @default(uuid())
+  jobId    String        @unique
+  job      Job           @relation(fields: [jobId], references: [id])
+  userId   String
+  user     User          @relation(fields: [userId], references: [id])
+  amount   Decimal       @db.Decimal(10, 2)
+  currency String        @default("BDT")
+  status   PaymentStatus @default(PENDING)
+  method   PaymentMethod
+
+  // Gateway fields
+  transactionId   String? @unique
+  stripeSessionId String? @unique
+  stripePaymentId String? @unique
+  bkashPaymentId  String? @unique
+  bkashTrxId      String? @unique
+  gatewayResponse Json?
+  failureReason   String?
+
+  // Retry tracking
+  attemptCount   Int       @default(0)   
+  lastAttemptAt  DateTime?              
+
+  paidAt     DateTime?
+  refundedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// ═══════════════════════════════════════
+// TECHNICIAN REVIEW
+// ═══════════════════════════════════════
+
+model TechnicianReview {
+  id           String            @id @default(uuid())
+  technicianId String
+  technician   TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  jobId        String            @unique
+  job          Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  reviewerId   String
+  reviewer     User              @relation(fields: [reviewerId], references: [id])
+
+  rating          Int 
+  punctuality     Int 
+  professionalism Int 
+  quality         Int
+  comment         String?
+  createdAt       DateTime @default(now())
+
+  @@index([technicianId])
+  @@index([reviewerId])  
+  @@map("technician_reviews")
+}
+
+// ═══════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  link      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ═══════════════════════════════════════
+// AUDIT
+// ═══════════════════════════════════════
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId, createdAt])  
+  @@map("audit_logs")
+}
+
+// ═══════════════════════════════════════
+// SYSTEM
+// ═══════════════════════════════════════
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       Json
+  description String?
+  updatedById String?
+  updatedBy   User?    @relation("SystemSettingUpdater", fields: [updatedById], references: [id])
+  createdAt   DateTime @default(now())  
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}

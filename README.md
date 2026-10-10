@@ -9,8 +9,8 @@ ServicePro FSMS is a production-ready, secure and scalable backend for **dispatc
 | Item                   | Value                                                                              |
 | ---------------------- | ---------------------------------------------------------------------------------- |
 | **Backend Repo**       | <https://github.com/Sumayea104/servicepro-fsms>                                    |
-| **Live API**           | `https://<your-service>.onrender.com`                                              |
-| **Health Check**       | `https://<your-service>.onrender.com/health`                                       |
+| **Live API**           | `[](https://servicepro-fsms-1.onrender.com).com`                                              |
+| **Health Check**       | `[](https://servicepro-fsms-1.onrender.com)/health`                                       |
 | **Postman Collection** | [`postman/ServicePro-FSMS.postman_collection.json`](postman/ServicePro-FSMS.postman_collection.json) |
 | **Frontend Repo**      | `https://github.com/Sumayea104/<your-frontend-repo>`                               |
 | **Live Frontend**      | `https://<your-frontend>.vercel.app`                                               |

@@ -216,6 +216,7 @@ Protected routes use `Authorization: Bearer <accessToken>`.
 | `PATCH` | `/jobs/:id/reschedule`       | Move the visit (conflict-checked)                        | Admin       |
 | `PATCH` | `/jobs/:id/status`           | Accept / start / complete / cancel                       | Technician* |
 | `POST`  | `/jobs/:id/cancel`           | Cancel a job                                             | Owner / Admin |
+| `DELETE` | `/jobs/:id`                 | Soft-delete a job (not allowed while work is active)     | Admin       |
 | `POST`  | `/jobs/:id/service-report`   | Submit or update the service report                      | Technician  |
 | `POST`  | `/jobs/:id/attachments`      | Upload a photo / document                                | Private     |
 | `POST`  | `/jobs/:id/review-feedback`  | Rate the technician after completion                     | Customer    |
@@ -254,7 +255,7 @@ Live push is available over WebSocket at `/ws?token=<accessToken>` on the Render
 | `GET`    | `/admin/audit-logs`               | Audit trail (`?entity&page&limit`)       |
 | `PUT`    | `/admin/settings`                 | Create / update a system setting         |
 
-Plus `GET /health` for uptime checks. **43 documented endpoints** in total.
+Plus `GET /health` for uptime checks. **44 documented endpoints** in total.
 
 ---
 
@@ -286,6 +287,7 @@ npm run dev                      # REST API on http://localhost:5000
 | `FRONTEND_URL` | Allowed CORS origin + bKash redirect target |
 | `GOOGLE_CLIENT_ID` | Google sign-in |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe payments (test mode) |
+| `BDT_PER_USD` | BDT→USD rate used to convert the job price for Stripe card payments (default `120`); bKash charges BDT as-is |
 | `BKASH_BASE_URL`, `BKASH_USERNAME`, `BKASH_PASSWORD`, `BKASH_APP_KEY`, `BKASH_APP_SECRET`, `BKASH_CALLBACK_URL` | bKash sandbox |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | File uploads |
 | `REDIS_URL` | Optional caching |

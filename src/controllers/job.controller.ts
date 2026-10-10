@@ -80,3 +80,7 @@ export const uploadAttachment = asyncHandler(async (req: Request, res: Response)
   });
   sendSuccess(res, attachment, 'Attachment uploaded', 201);
 });
+export const deleteJob = asyncHandler(async (req: Request, res: Response) => {
+  await jobService.softDeleteJob(req.params.id as string, req.user!.id);
+  sendSuccess(res, {}, 'Job deleted');
+});

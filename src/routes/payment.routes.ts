@@ -9,6 +9,7 @@ const router = Router();
 router.get('/bkash/callback', paymentController.bkashCallback);
 
 router.use(authenticate);
+router.get('/', paymentController.listPayments);
 router.post('/initiate', validate(initiatePaymentSchema), paymentController.initiatePayment);
 router.get('/:id', paymentController.getPayment);
 

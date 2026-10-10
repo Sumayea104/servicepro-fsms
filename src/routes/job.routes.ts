@@ -24,6 +24,7 @@ router.get('/', jobController.listJobs); // scoped per-role inside the service
 router.get('/search', requireRole('ADMIN'), jobController.searchJobs); // cross-customer search is an ops tool, not exposed to customers/technicians
 router.get('/:id', jobController.getJob);
 
+router.delete('/:id', requireRole('ADMIN'), jobController.deleteJob);
 router.patch('/:id/review', requireRole('ADMIN'), validate(reviewJobSchema), jobController.reviewJob);
 router.post('/:id/assign', requireRole('ADMIN'), validate(assignJobSchema), jobController.assignJob);
 router.patch('/:id/reschedule', requireRole('ADMIN'), validate(rescheduleJobSchema), jobController.rescheduleJob);

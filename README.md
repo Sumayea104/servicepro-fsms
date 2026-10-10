@@ -6,18 +6,17 @@ ServicePro FSMS is a production-ready, secure and scalable backend for **dispatc
 
 ## 📦 Submission Details
 
-| Item                   | Value                                                                              |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| **Backend Repo**       | <https://github.com/Sumayea104/servicepro-fsms>                                    |
-| **Live API**           | `[](https://servicepro-fsms-1.onrender.com).com`                                              |
-| **Health Check**       | `[](https://servicepro-fsms-1.onrender.com)/health`                                       |
-| **Postman Collection** | [`postman/ServicePro-FSMS.postman_collection.json`](postman/ServicePro-FSMS.postman_collection.json) |
-| **Frontend Repo**      | `https://github.com/Sumayea104/<your-frontend-repo>`                               |
-| **Live Frontend**      | `https://<your-frontend>.vercel.app`                                               |
-| **Admin Email**        | `admin@servicepro.com`                                                             |
-| **Admin Password**     | `Admin123!`                                                                        |
-| **Demo Video**         | `<paste your video link here>`                                                     |
-
+| Item                   | Value                                                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Backend Repo**       | [servicepro-fsms](https://github.com/Sumayea104/servicepro-fsms)                                               |
+| **Live API**           | [https://servicepro-fsms-1.onrender.com](https://servicepro-fsms-1.onrender.com)                               |
+| **Health Check**       | [https://servicepro-fsms-1.onrender.com/health](https://servicepro-fsms-1.onrender.com/health)                 |
+| **Postman Collection** | [`postman/ServicePro-FSMS.postman_collection.json`](postman/ServicePro-FSMS.postman_collection.json)           |
+| **Frontend Repo**      | [servicepro-frontend](https://github.com/Sumayea104/<your-frontend-repo>)                                      |
+| **Live Frontend**      | [https://<your-frontend>.vercel.app](https://<your-frontend>.vercel.app)                                       |
+| **Admin Email**        | `admin@servicepro.com`                                                                                         |
+| **Admin Password**     | `Admin123!`                                                                                                    |
+| **Demo Video**         | [Watch Demo Video](<paste-your-video-link-here>)                                                               |
 > ⚠️ These credentials are for testing and demonstration only.
 
 ### Demo accounts (created by the seed script)
@@ -162,7 +161,7 @@ PostgreSQL with Prisma 7. Main models: `User`, `RefreshToken`, `TechnicianProfil
 
 ## 📚 API Endpoints
 
-**Base URL:** `https://<your-service>.onrender.com/api/v1`
+**Base URL:** `https://servicepro-fsms-1.onrender.com/api/v1`
 
 All responses use one structure:
 
@@ -306,10 +305,11 @@ npm run dev                      # REST API on http://localhost:5000
 
 ## 🌐 Deployment
 
-- **Render (recommended):** `render.yaml` runs `prisma generate && prisma migrate deploy && npm run build` and starts `npm run start:ws`, so REST **and** WebSocket run in one long-lived process.
-- **Vercel:** `vercel.json` routes everything to `src/server.vercel.ts` (the Express app without `.listen()`); the `vercel-build` script generates the Prisma client first. Serverless functions cannot hold WebSocket connections, so live push is Render-only (notifications are still stored and returned by `GET /notifications`).
-- Register `https://<api-domain>/api/v1/payments/webhook` as a Stripe webhook endpoint and set `BKASH_CALLBACK_URL` to `https://<api-domain>/api/v1/payments/bkash/callback`.
-
+- **Render (Primary):** `render.yaml` runs `prisma generate && prisma migrate deploy && npm run build` and starts `npm run start:ws`. This runs both the REST API and WebSocket (`ws`) live notifications in a single long-lived process.
+- **Vercel (Frontend & Serverless REST):** Optimized for client-side frontend hosting. Note that WebSocket connections require the Render primary host for real-time features.
+- **Webhook Configuration:**
+  - **Stripe:** Register `https://servicepro-fsms-1.onrender.com/api/v1/payments/webhook` in the Stripe Dashboard.
+  - **bKash:** Set `BKASH_CALLBACK_URL` in environment variables to `https://servicepro-fsms-1.onrender.com/api/v1/payments/bkash/callback`.
 ---
 
 ## 💡 Challenges & Key Learnings
@@ -351,7 +351,7 @@ npm run dev                      # REST API on http://localhost:5000
 
 ## 📚 API Documentation
 
-- **Postman Collection:** [`postman/ServicePro-FSMS.postman_collection.json`](postman/ServicePro-FSMS.postman_collection.json) - import it, run **Auth → Login (Admin)** and **Login (Customer)** first; tokens are saved to collection variables automatically.
+- **Postman Collection:** [`postman/ServicePro-FSMS.postman_collection.json`](postman/ServicePro-FSMS.postman_collection.json) - Import it into Postman, run **Auth → Login (Admin)** and **Login (Customer)** first; access tokens will be saved to collection variables automatically.
 
 ---
 
@@ -361,15 +361,15 @@ npm run dev                      # REST API on http://localhost:5000
 
 ```bash
 # Health check
-curl https://<your-service>.onrender.com/health
+curl [https://servicepro-fsms-1.onrender.com/health](https://servicepro-fsms-1.onrender.com/health)
 
 # Login as the demo admin
-curl -X POST https://<your-service>.onrender.com/api/v1/auth/login \
+curl -X POST https://servicepro-fsms-1.onrender.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@servicepro.com","password":"Admin123!"}'
 
 # Use the returned accessToken
-curl https://<your-service>.onrender.com/api/v1/admin/dashboard-stats \
+curl https://servicepro-fsms-1.onrender.com/api/v1/admin/dashboard-stats \
   -H "Authorization: Bearer <accessToken>"
 ```
 

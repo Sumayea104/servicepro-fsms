@@ -11,7 +11,8 @@ router.get('/', technicianController.listTechnicians);
 router.get('/suggest', authenticate, requireRole('ADMIN'), technicianController.suggestTechnicians);
 router.get('/:id', technicianController.getTechnician);
 
-router.use(authenticate, requireRole('TECHNICIAN'));
+// Scoped to /me so it can't swallow public routes like GET /:id/reviews that are mounted after this router
+router.use('/me', authenticate, requireRole('TECHNICIAN'));
 router.patch('/me/availability', validate(updateAvailabilitySchema), technicianController.updateAvailability);
 router.patch('/me/location', validate(updateLocationSchema), technicianController.updateLocation);
 router.patch('/me/skills', validate(updateSkillsSchema), technicianController.updateSkills);

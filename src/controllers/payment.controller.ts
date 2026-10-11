@@ -10,6 +10,13 @@ export const initiatePayment = asyncHandler(async (req: Request, res: Response) 
   sendSuccess(res, result, 'Payment initiated', 201);
 });
 
+export const listPayments = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(String(req.query.page)) || 1;
+  const limit = Math.min(parseInt(String(req.query.limit)) || 10, 100);
+  const result = await paymentService.listPayments(req.user!, { status: req.query.status as string, page, limit });
+  sendSuccess(res, result);
+});
+
 export const getPayment = asyncHandler(async (req: Request, res: Response) => {
   const payment = await paymentService.getPaymentById(req.params.id as string, req.user!);
   sendSuccess(res, payment);

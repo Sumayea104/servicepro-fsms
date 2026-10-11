@@ -48,21 +48,25 @@ export async function initiatePayment(jobId: string, userId: string, method: 'ST
   let payment = await prisma.payment.findUnique({ where: { jobId } });
   if (payment?.status === 'PAID') throw AppError.conflict('This job has already been paid for');
 
-  // Stripe settles in USD here; bKash is BDT-only. The schema defaults
-  // currency to "BDT", which is correct for bKash but silently wrong for
-  // Stripe unless set explicitly on every write.
+  // Job prices are stored in BDT. bKash charges BDT as-is; Stripe settles in USD, so the BDT price is
+  // converted at BDT_PER_USD and the Payment row records what was actually charged, in that currency.
+  const amountBdt = Number(amount);
   const currency = method === 'STRIPE' ? 'USD' : 'BDT';
+  const chargeAmount = method === 'STRIPE' ? Math.round((amountBdt / env.BDT_PER_USD) * 100) / 100 : amountBdt;
+  if (method === 'STRIPE' && chargeAmount < 0.5) {
+    throw AppError.badRequest('This amount is below the card minimum (about US$0.50). Pay with bKash instead.');
+  }
 
   payment = payment
-    ? await prisma.payment.update({ where: { id: payment.id }, data: { method, currency, status: 'PROCESSING', attemptCount: { increment: 1 }, lastAttemptAt: new Date() } })
-    : await prisma.payment.create({ data: { jobId, userId, amount, method, currency, status: 'PROCESSING', attemptCount: 1, lastAttemptAt: new Date() } });
+    ? await prisma.payment.update({ where: { id: payment.id }, data: { method, currency, amount: chargeAmount, status: 'PROCESSING', attemptCount: { increment: 1 }, lastAttemptAt: new Date() } })
+    : await prisma.payment.create({ data: { jobId, userId, amount: chargeAmount, method, currency, status: 'PROCESSING', attemptCount: 1, lastAttemptAt: new Date() } });
 
   if (method === 'STRIPE') {
     if (!stripe) throw AppError.badRequest('Stripe is not configured on this server');
     const intent = await stripe.paymentIntents.create({
-      amount: Math.round(Number(amount) * 100),
+      amount: Math.round(chargeAmount * 100),
       currency: 'usd',
-      metadata: { jobId, paymentId: payment.id },
+      metadata: { jobId, paymentId: payment.id, amountBdt: String(amountBdt), bdtPerUsd: String(env.BDT_PER_USD) },
     });
     await prisma.payment.update({ where: { id: payment.id }, data: { stripePaymentId: intent.id } });
     return { payment, provider: 'STRIPE', clientSecret: intent.client_secret };
@@ -76,7 +80,7 @@ export async function initiatePayment(jobId: string, userId: string, method: 'ST
       mode: '0011',
       payerReference: userId,
       callbackURL: env.BKASH_CALLBACK_URL,
-      amount: Number(amount).toFixed(2),
+      amount: amountBdt.toFixed(2),
       currency: 'BDT',
       intent: 'sale',
       merchantInvoiceNumber: payment.id,
@@ -158,3 +162,23 @@ export async function getPaymentById(id: string, actor: { id: string; role: stri
 }
 
 export { stripe };
+
+/** Role-scoped payment list: customers see their own, technicians see payments for jobs they performed, admins see all. */
+export async function listPayments(actor: { id: string; role: string }, filters: { status?: string; page: number; limit: number }) {
+  const where: any = {};
+  if (filters.status) where.status = filters.status;
+  if (actor.role === 'CUSTOMER') where.userId = actor.id;
+  if (actor.role === 'TECHNICIAN') where.job = { technician: { userId: actor.id } };
+
+  const [items, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      include: { job: { select: { id: true, title: true, category: true } } },
+      skip: (filters.page - 1) * filters.limit,
+      take: filters.limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.payment.count({ where }),
+  ]);
+  return { items, total, page: filters.page, limit: filters.limit, totalPages: Math.ceil(total / filters.limit) };
+}

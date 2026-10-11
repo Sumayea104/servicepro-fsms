@@ -941,6 +941,24 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Delete Job (Admin, soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs",
+                "{{jobId}}"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -1077,6 +1095,37 @@
             },
             "auth": {
               "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Payments (role-scoped)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments?page=1&limit=10&status=PAID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "PAID"
+                }
+              ]
             }
           },
           "response": []

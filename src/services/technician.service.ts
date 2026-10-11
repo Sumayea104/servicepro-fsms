@@ -16,7 +16,7 @@ export async function listTechnicians(filters: { skill?: string; available?: str
     const [items, total] = await Promise.all([
       prisma.technicianProfile.findMany({
         where,
-        include: { user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } } },
+        include: { user: { select: { id: true, fullName: true, avatarUrl: true } } },
         skip: (filters.page - 1) * filters.limit,
         take: filters.limit,
         orderBy: { rating: 'desc' },
@@ -32,7 +32,7 @@ export async function getTechnicianById(id: string) {
   const technician = await prisma.technicianProfile.findUnique({
     where: { id },
     include: {
-      user: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+      user: { select: { id: true, fullName: true, avatarUrl: true } },
       availability: true,
       reviews: { orderBy: { createdAt: 'desc' }, take: 10 },
     },

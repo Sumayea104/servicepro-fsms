@@ -268,3 +268,16 @@ export async function addAttachment(jobId: string, uploadedBy: string, file: { f
 export async function cancelJob(jobId: string, actor: AuthUser, reason?: string) {
   return updateJobStatus(jobId, actor, 'CANCELLED', { cancellationReason: reason });
 }
+/** Soft delete: the row stays (payments, audit trail and reports keep referencing it) but disappears from every query. Active work can't be deleted. */
+export async function softDeleteJob(jobId: string, adminId: string) {
+  const job = await prisma.job.findFirst({ where: { id: jobId, deletedAt: null } });
+  if (!job) throw AppError.notFound('Job not found');
+  if (['ASSIGNED', 'ACCEPTED', 'IN_PROGRESS'].includes(job.status)) {
+    throw AppError.badRequest(`A job in status ${job.status} can't be deleted — cancel it first`);
+  }
+  return prisma.$transaction(async (tx) => {
+    const deleted = await tx.job.update({ where: { id: jobId }, data: { deletedAt: new Date() } });
+    await writeAuditLog(tx, { userId: adminId, action: 'JOB_DELETED', entity: 'Job', entityId: jobId, details: { status: job.status } });
+    return deleted;
+  });
+}

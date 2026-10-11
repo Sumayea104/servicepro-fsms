@@ -53,6 +53,14 @@ async function main() {
     console.log(`Seeded demo technician: ${demoTechEmail} / Technician123!`);
   }
 
+  const demoCustomerEmail = 'demo.customer@servicepro.com';
+  if (!(await prisma.user.findUnique({ where: { email: demoCustomerEmail } }))) {
+    await prisma.user.create({
+      data: { email: demoCustomerEmail, password: await bcrypt.hash('Customer123!', 10), fullName: 'Demo Customer', role: 'CUSTOMER', emailVerified: true },
+    });
+    console.log(`Seeded demo customer: ${demoCustomerEmail} / Customer123!`);
+  }
+
   await prisma.systemSetting.upsert({
     where: { key: 'default_job_duration_minutes' },
     create: { key: 'default_job_duration_minutes', value: 120, description: 'Default appointment window used for schedule-conflict detection' },
